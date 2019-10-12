@@ -41,11 +41,50 @@ loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=p
 #学习率
 learning_rate = 0.2
 
-#！！这里修改优化
+#！！这里修改优化器
+
 #使用梯度下降法优化
-# train_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
-#使用adam优化器
+
+# GradientDescentOptimizer优化器，标准梯度下降法（GD）
+#train_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
+
+# MomentumOptimizer优化器，动量优化算法，动量优化算法在梯度下降法（SGD）的基础上进行改变，具有加速梯度下降的作用。
+# 当前权值的改变会受到上一次权值改变的影响。
+# momentum（动量），表示要在多大程度上保留原来的更新方向，这个值在0-1之间。
+# 在训练开始时，由于梯度可能会很大，所以初始值一般选为0.5；当梯度不那么大时，改为0.9。
+# 特点：前后梯度方向一致时,能够加速学习；前后梯度方向不一致时,能够抑制震荡
+#train_step = tf.train.MomentumOptimizer(learning_rate=learning_rate, momentum=0.5).minimize(loss)
+
+# AdagradOptimizer优化器，基于SGD
+# 核心思想是对比比较常见得数据给予它比较小的学习率调整参数，对于比较罕见的数据给予它比较大的学习率去调整。
+# 适合用于数据稀疏的数据集。优势在于不需要人为调节学习率，缺点是随着迭代次数增多，学习率会越来越小，趋向于0。
+#train_step = tf.train.AdagradOptimizer(learning_rate=learning_rate).minimize(loss)
+
+# RMSPropOptimizer优化器，使用的是指数加权平均。用前t次梯度平方的平均值加上当前梯度的平方的和的开平方作为学习率的分母。
+# 自适应的学习率调参方法，目的是为了减少人工调参的次数（只是减少次数，还是需要人工设定学习率的）
+# 修改了AdaGrad的梯度累积为指数加权的移动平均，使在非凸下效果更好。
+# decay代表衰减系数
+#train_step = tf.train.RMSPropOptimizer(learning_rate=learning_rate, decay=0.8, momentum=0.1).minimize(loss)
+
+# AdadeltaOptimizer优化器，实现一个自适应的、单调递减的学习率，它使用两个初始化参数 learning_rate 和衰减因子 rho。
+# AdaGrad与RMSProp都需要指定全局学习率，AdaDelta结合两种算法每次参数的更新步长。
+# 在训练的前中期，表现效果较好，加速效果可以，训练速度更快。在后期，模型会反复地在局部最小值附近抖动。
+#train_step = tf.train.AdadeltaOptimizer(rho=0.95).minimize(loss)
+
+# AdamOptimizer优化器，自适应矩估计。本质上是带有动量项的RMSprop，它利用梯度的一阶矩估计和二阶矩估计动态调整每个参数的学习率。
+# 就像Adadelta和RMSProp一样，Adam会存储之前衰减的平方梯度，同时也会保存之前衰减的梯度。经过一些处理后再使用类似Adadelta和RMSProp的方式更新参数。
+# Adam的优点主要在于经过偏置校正后，每一次迭代学习率都有个确定范围，使得参数比较平稳。
+# 相比于，RMSProp缺少修正因子导致二阶矩估计在训练初期有较高的偏置，Adam包括偏置修正，从原始点初始化的一阶矩（动量项）和（非中心的）二阶矩估计。
+# 常用
 train_step = tf.train.AdamOptimizer(1e-3).minimize(loss)
+
+# 不同优化器比较
+# 下降速度上，三个自适应学习优化器  AdaGrad,RMSProp与AdaDelta的下降速度明显快于SGD，而Adagrad与
+# RMSProp速度相差不大快于AdaDelta。两个动量优化器Momentum ,NAG初期下降较慢，后期逐渐提速，NAG后期超过Adagrad与RMSProt。
+# 在有鞍点的情况下，自适应学习率优化器没有进入，Momentum与NAG进入后离开并迅速下降。而SGD进入未逃离鞍点。
+# 速度：快->慢： Momenum ，NAG -> AdaGrad,AdaDelta,RMSProp ->SGD
+# 收敛： 动量优化器有走岔路，三个自适应优化器中Adagrad初期走了岔路，
+# 但后期调整，与另外两个相比，走的路要长，但在快接近目标时，RMSProp抖动明显。SGD走的过程最短，而且方向比较正确。
 
 init = tf.global_variables_initializer()
 
