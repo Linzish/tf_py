@@ -4,12 +4,25 @@
 # In[1]:
 
 
+from PIL import Image, ImageFilter
 import tensorflow as tf
+import matplotlib.pyplot as plt
 from tensorflow.examples.tutorials.mnist import input_data
 
 
 # In[2]:
 
+
+def imageprepare(): 
+    im = Image.open('F:/learning/tensorflow/test-4.png') #读取的图片所在路径，注意是28*28像素
+    plt.imshow(im)  #显示需要识别的图片
+    plt.show()
+    im = im.convert('L')
+    tv = list(im.getdata()) 
+    tva = [(255-x)*1.0/255.0 for x in tv] 
+    return tva
+
+result=imageprepare()
 
 #载入MNIST数据集,使用one_hot编码
 mnist = input_data.read_data_sets("mnist", one_hot=True)
@@ -104,17 +117,21 @@ correct_prediction = tf.equal(tf.argmax(prediction,1),tf.argmax(y,1))
 #准确率
 accuracy = tf.reduce_mean(tf.cast(correct_prediction,tf.float32), name='accuracy')
 
+init = tf.global_variables_initializer()
+
+saver=tf.train.Saver()
+
 #会话
 with tf.Session() as sess:
-    sess.run(tf.global_variables_initializer())
-    for epoch in range(21):
-        for batch in range(n_batch):
-            batch_xs,batch_ys = mnist.train.next_batch(batch_size)
-            sess.run(train_step,feed_dict={x:batch_xs,y:batch_ys,keep_prob:0.7})
-            
-        acc = sess.run(accuracy,feed_dict={x:mnist.test.images,y:mnist.test.labels,keep_prob:1.0})
-        print("iter " + str(epoch) + ",Testing Accuracy " + str(acc))
-    tf.train.Saver(max_to_keep=1).save(sess, 'models/cnn/cnn.ckpt')
+    sess.run(init)
+    # 导入模型
+    saver.restore(sess, tf.train.latest_checkpoint('./models/cnn/'))
+    # 测试
+    pre=tf.argmax(prediction,1)
+    predint=pre.eval(feed_dict={x: [result], keep_prob:1.0}, session=sess)
+    
+    print('识别结果:')
+    print(predint[0])
 
 
 # In[ ]:

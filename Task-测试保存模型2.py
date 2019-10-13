@@ -4,16 +4,28 @@
 # In[1]:
 
 
+from PIL import Image, ImageFilter
 import tensorflow as tf
+import matplotlib.pyplot as plt
 from tensorflow.examples.tutorials.mnist import input_data
 
 
-# In[6]:
+# In[5]:
 
 
-#载入MNIST数据集,使用one_hot编码
+def imageprepare(): 
+    im = Image.open('F:/learning/tensorflow/test-1.png') #读取的图片所在路径，注意是28*28像素
+    plt.imshow(im)  #显示需要识别的图片
+    plt.show()
+    im = im.convert('L')
+    tv = list(im.getdata()) 
+    tva = [(255-x)*1.0/255.0 for x in tv] 
+    return tva
+
+result=imageprepare()
+
+
 mnist = input_data.read_data_sets("mnist", one_hot=True)
-
 #定义batch大小，一次性100张图
 batch_size = 100
 #计算一共有多少个批次
@@ -56,43 +68,23 @@ correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(prediction,1))
 #把correct_prediction转换为浮点类型再求平均值
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32), name='accuracy')
 
+saver = tf.train.Saver()
+
 #会话
 with tf.Session() as sess:
     sess.run(init)
-    #迭代21个周期（21*100）（所有图片训练21次）
-    for epoch in range(21):
-        for batch in range(n_batch):
-            #传入100张图片，数据保存在batch_xs和batch_ys中
-            batch_xs,batch_ys = mnist.train.next_batch(batch_size)
-            sess.run(train_step, feed_dict={x:batch_xs, y:batch_ys})
-        #获取准确率，传入测试集的图片和标签
-        acc = sess.run(accuracy, feed_dict={x:mnist.test.images,y:mnist.test.labels})
-        print("iter " + str(epoch) + ",Testing Accuracy " + str(acc))
-    tf.train.Saver().save(sess, 'models/test/test.ckpt')
+    # 导入模型
+    saver.restore(sess, tf.train.latest_checkpoint('./models/test/'))
+    # 测试
+    pre=tf.argmax(prediction,1)
+    predint=pre.eval(feed_dict={x: [result]}, session=sess)
+    
+    print('识别结果:')
+    print(predint[0])
 
 
 # In[ ]:
 
 
-# iter 0,Testing Accuracy 0.8298
-# iter 1,Testing Accuracy 0.8706
-# iter 2,Testing Accuracy 0.882
-# iter 3,Testing Accuracy 0.8873
-# iter 4,Testing Accuracy 0.8942
-# iter 5,Testing Accuracy 0.8974
-# iter 6,Testing Accuracy 0.8988
-# iter 7,Testing Accuracy 0.902
-# iter 8,Testing Accuracy 0.9035
-# iter 9,Testing Accuracy 0.9051
-# iter 10,Testing Accuracy 0.9062
-# iter 11,Testing Accuracy 0.907
-# iter 12,Testing Accuracy 0.9079
-# iter 13,Testing Accuracy 0.9093
-# iter 14,Testing Accuracy 0.9093
-# iter 15,Testing Accuracy 0.9107
-# iter 16,Testing Accuracy 0.9122
-# iter 17,Testing Accuracy 0.9118
-# iter 18,Testing Accuracy 0.9126
-# iter 19,Testing Accuracy 0.9138
-# iter 20,Testing Accuracy 0.914
+
 

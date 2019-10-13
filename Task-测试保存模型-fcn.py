@@ -4,12 +4,25 @@
 # In[1]:
 
 
+from PIL import Image, ImageFilter
 import tensorflow as tf
+import matplotlib.pyplot as plt
 from tensorflow.examples.tutorials.mnist import input_data
-# import os
 
 
 # In[2]:
+
+
+def imageprepare(): 
+    im = Image.open('F:/learning/tensorflow/test-7.png') #读取的图片所在路径，注意是28*28像素
+    plt.imshow(im)  #显示需要识别的图片
+    plt.show()
+    im = im.convert('L')
+    tv = list(im.getdata()) 
+    tva = [(255-x)*1.0/255.0 for x in tv] 
+    return tva
+
+result=imageprepare()
 
 
 #载入MNIST数据集,使用one_hot编码
@@ -70,29 +83,19 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32), name='accurac
 # if os.path.isdir(path) is False:    
 #     os.makedirs(path)
 #用于保存模型
-# saver = tf.train.Saver()
+saver = tf.train.Saver()
 
 #会话
 with tf.Session() as sess:
     sess.run(init)
-    #迭代21个周期（21*100）（所有图片训练21次）
-    for epoch in range(21):
-        for batch in range(n_batch):
-            #修改学习率
-            sess.run(tf.assign(lr, 0.001 * (0.95 ** epoch)))
-            #传入100张图片，数据保存在batch_xs和batch_ys中
-            batch_xs,batch_ys = mnist.train.next_batch(batch_size)
-            sess.run(train_step, feed_dict={x:batch_xs, y:batch_ys, keep_prob:1.0})
-        #获取准确率，传入测试集的图片和标签
-#         test_acc = sess.run(accuracy, feed_dict={x:mnist.test.images,y:mnist.test.labels, keep_prob:1.0})
-#         train_acc = sess.run(accuracy, feed_dict={x:mnist.train.images,y:mnist.train.labels, keep_prob:1.0})
-#         print("iter " + str(epoch) + ",Testing Accuracy " + str(test_acc) + " ,Training Accuracy " + str(train_step))
-        
-        tf.train.Saver(max_to_keep=1).save(sess, 'models/fcn/fcn.ckpt', global_step=epoch)
+    # 导入模型
+    saver.restore(sess, tf.train.latest_checkpoint('./models/fcn/'))
+    # 测试
+    pre=tf.argmax(prediction,1)
+    predint=pre.eval(feed_dict={x: [result], keep_prob:1.0}, session=sess)
     
-        learning_rate = sess.run(lr)
-        acc = sess.run(accuracy, feed_dict={x:mnist.test.images,y:mnist.test.labels, keep_prob:1.0})
-        print("iter " + str(epoch) + ",Testing Accuracy " + str(acc) + ", Learning Rate: " + str(learning_rate))
+    print('识别结果:')
+    print(predint[0])
 
 
 # In[ ]:
